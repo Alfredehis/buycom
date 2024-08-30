@@ -1,0 +1,365 @@
+import 'package:commerce/presentation/state_holders/categories_controller.dart';
+import 'package:commerce/presentation/state_holders/home_screen_slider_controller.dart';
+import 'package:commerce/presentation/state_holders/homecontroller.dart';
+import 'package:commerce/presentation/state_holders/main_bottom_nav_controller.dart';
+import 'package:commerce/presentation/state_holders/popular_products_controller.dart';
+import 'package:commerce/presentation/state_holders/spacial_products_controller.dart';
+import 'package:commerce/presentation/ui/screen/auth/login.dart';
+import 'package:commerce/presentation/ui/screen/item_screen.dart';
+import 'package:commerce/presentation/ui/screen/profile/profile.dart';
+import 'package:commerce/presentation/ui/widgets/app_bar_icons.dart';
+import 'package:commerce/presentation/ui/widgets/categories_card.dart';
+import 'package:commerce/presentation/ui/widgets/home_screen_widgets/home_screen_search_bar.dart';
+import 'package:commerce/presentation/ui/widgets/home_screen_widgets/home_slider.dart';
+import 'package:commerce/presentation/ui/widgets/products_card.dart';
+import 'package:commerce/presentation/ui/widgets/shimmer_in_progress/shimmer_popular.dart';
+import 'package:commerce/presentation/ui/widgets/shimmer_in_progress/shimmer_progress.dart';
+import 'package:commerce/presentation/ui/widgets/title_header_and_see_all_button.dart';
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  final _homecontrol = Get.put(HomeController());
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(Duration.zero, () {
+      _homecontrol.fetchUserData();
+      _homecontrol.fetchProducts();
+      _homecontrol.fetchOrders();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: homeScreenAppBar,
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              const HomeScreenSearchBar(),
+              const SizedBox(
+                height: 16,
+              ),
+              GetBuilder<HomeController>(builder: (controller) {
+                if (controller.fetchingProd) {
+                  return const SizedBox(
+                    height: 200,
+                    child: Center(
+                      child: ShimmerProgressForCarouselSlider(),
+                    ),
+                  );
+                }
+                return HomeSlider(
+                  sliders: _homecontrol.products,
+                );
+              }),
+              const SizedBox(
+                height: 16,
+              ),
+              TitleHeaderAndSeeAllButton(
+                title: 'All Categories',
+                onTap: () {
+                  Get.find<MainBottomNavController>().onChanged(1);
+                },
+              ),
+              const SizedBox(
+                height: 8,
+              ),
+              allCategoriesCardListView,
+              GetBuilder<PopularProductsController>(builder: (controller) {
+                return TitleHeaderAndSeeAllButton(
+                  title: "Popular",
+                  onTap: () {
+                    Get.to(
+                      ItemsScreen(
+                        title: 'Popular',
+                        newp: _homecontrol.products,
+                      ),
+                    );
+                  },
+                );
+              }),
+              popularItemsListView,
+              GetBuilder<SpecialProductsController>(
+                  builder: (specialController) {
+                return TitleHeaderAndSeeAllButton(
+                  title: "Special",
+                  onTap: () {
+                    Get.to(
+                      ItemsScreen(
+                        title: 'Special',
+                        newp: _homecontrol.products,
+                      ),
+                    );
+                  },
+                );
+              }),
+              specialItemListView,
+              GetBuilder<SpecialProductsController>(
+                  builder: (specialController) {
+                return TitleHeaderAndSeeAllButton(
+                  title: "Split Orders",
+                  onTap: () {
+                    Get.to(
+                      ItemsScreen(
+                        title: 'Split Orders',
+                        newp: _homecontrol.supported_splited_products,
+                      ),
+                    );
+                  },
+                );
+              }),
+              spiltOrderListView,
+              GetBuilder<SpecialProductsController>(
+                  builder: (specialController) {
+                return TitleHeaderAndSeeAllButton(
+                  title: "Others",
+                  onTap: () {
+                    Get.to(
+                      ItemsScreen(
+                        title: 'Others',
+                        newp: _homecontrol.products,
+                      ),
+                    );
+                  },
+                );
+              }),
+              Wrap(
+                children: [
+                  ..._homecontrol.products.map((v) {
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 20),
+                      child: ProductsCard(
+                        product: v,
+                        isShowDeleteButton: false,
+                      ),
+                    );
+                  })
+                ],
+              )
+              // Padding(
+              //   padding: const EdgeInsets.symmetric(horizontal: 8),
+              //   child: GridView.builder(
+              //     itemCount: _homecontrol.products.length ?? 0,
+              //     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              //       crossAxisCount: 3,
+              //       crossAxisSpacing: 8,
+              //       mainAxisSpacing: 8,
+              //       childAspectRatio: 0.7,
+              //     ),
+              //     itemBuilder: (context, int index) {
+              //       return FittedBox(
+              //         child: ProductsCard(
+              //           product: _homecontrol.products[index],
+              //           isShowDeleteButton: false,
+              //         ),
+              //       );
+              //     },
+              //   ),
+              // ),
+
+              // GetBuilder<NewProductsController>(builder: (newController) {
+              //   return TitleHeaderAndSeeAllButton(
+              //     title: "New",
+              //     onTap: () {
+              //       Get.to(
+              //         ItemsScreen(
+              //           title: 'New',
+              //           products: newController.productModel,
+              //         ),
+              //       );
+              //     },
+              //   );
+              // }),
+              // newItemListView,
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // SizedBox get newItemListView {
+  //   return SizedBox(
+  //     height: 182,
+  //     child: GetBuilder<NewProductsController>(builder: (newController) {
+  //       if (newController.getNewInProgress) {
+  //         return const Center(
+  //           child: CircularProgressIndicator(),
+  //         );
+  //       }
+  //       return ListView.builder(
+  //         addAutomaticKeepAlives: true,
+  //         scrollDirection: Axis.horizontal,
+  //         itemCount: newController.productModel.data?.length ?? 0,
+  //         itemBuilder: (context, index) {
+  //           return ProductsCard(
+  //             product: newController.productModel.data![index],
+  //             isShowDeleteButton: false,
+  //           );
+  //         },
+  //       );
+  //     }),
+  //   );
+  // }
+
+  SizedBox get spiltOrderListView {
+    return SizedBox(
+      height: 182,
+      child: GetBuilder<HomeController>(
+        builder: (ctr) {
+          if (ctr.products.isEmpty) {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          }
+          return ListView.builder(
+            addAutomaticKeepAlives: true,
+            scrollDirection: Axis.horizontal,
+            itemCount: ctr.supported_splited_products.length < 5
+                ? ctr.supported_splited_products.length
+                : 4,
+            itemBuilder: (context, index) {
+              return ProductsCard(
+                product: ctr.supported_splited_products[index],
+                isShowDeleteButton: false,
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  SizedBox get specialItemListView {
+    return SizedBox(
+      height: 182,
+      child: GetBuilder<HomeController>(
+        builder: (ctr) {
+          if (ctr.products.isEmpty) {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          }
+          return ListView.builder(
+            addAutomaticKeepAlives: true,
+            scrollDirection: Axis.horizontal,
+            itemCount: 4,
+            itemBuilder: (context, index) {
+              return ProductsCard(
+                product: ctr.products.reversed.toList()[index],
+                isShowDeleteButton: false,
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  SizedBox get popularItemsListView {
+    return SizedBox(
+      height: 182,
+      child: GetBuilder<HomeController>(builder: (ctr) {
+        if (ctr.products.isEmpty) {
+          return const Row(
+            children: [
+              ShimmerPopular(
+                height: 160,
+                width: 150,
+              ),
+              ShimmerPopular(
+                height: 160,
+                width: 150,
+              ),
+            ],
+          );
+        }
+        return ListView.builder(
+          scrollDirection: Axis.horizontal,
+          itemCount: 4,
+          itemBuilder: (context, index) {
+            return ProductsCard(
+              product: ctr.products[index],
+              isShowDeleteButton: false,
+            );
+          },
+        );
+      }),
+    );
+  }
+
+  SizedBox get allCategoriesCardListView {
+    return SizedBox(
+      height: 90,
+      child: GetBuilder<CategoriesController>(builder: (categoriesController) {
+        return ListView.builder(
+          itemCount: categoriesController.categoryModel.data?.length ?? 0,
+          scrollDirection: Axis.horizontal,
+          itemBuilder: (context, int index) {
+            return GestureDetector(
+              onTap: () {
+                Get.to(
+                  ItemsScreen(
+                    title:
+                        '${categoriesController.categoryModel.data![index].categoryName}',
+                    newp: _homecontrol.products,
+                  ),
+                );
+              },
+              child: CategoriesCard(
+                categoryData: categoriesController.categoryModel.data![index],
+              ),
+            );
+          },
+        );
+      }),
+    );
+  }
+
+  AppBar get homeScreenAppBar {
+    final _homecontrol = Get.put(HomeController());
+
+    return AppBar(
+      backgroundColor: Colors.white,
+      elevation: 0,
+      title: Row(
+        children: [
+          // SvgPicture.asset(ImagesUtils.craftyBayNavBarLogoSVG),
+          GetBuilder<HomeController>(builder: (c) {
+            return Text(
+              _homecontrol.isLoggedin()
+                  ? "Welcome ${_homecontrol.firstname}"
+                  : "",
+              style: const TextStyle(fontSize: 16),
+            );
+          }),
+
+          const Spacer(),
+          AppBarIcons(
+            //EmailVerificationScreen
+            icon: Icons.person_outline,
+            onTap: () {
+              _homecontrol.isLoggedin()
+                  ? Get.to(() => const MyProfile())
+                  : Get.to(() => const Login());
+            },
+          ),
+          const SizedBox(
+            width: 12,
+          ),
+        ],
+      ),
+    );
+  }
+}
